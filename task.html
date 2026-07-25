@@ -1341,16 +1341,35 @@ function closeModal() {
   document.getElementById('modalOverlay').classList.remove('show');
 }
 
-// ===== 发送至聊天（通过后端 Bot API） =====
-// h5sdk 方案无需后端，API_BASE 已移除
+// ===== 发送至聊天 =====
+var API_BASE = 'https://feishu-bot-proxy.vercel.app';
 
 async function sendToChat() {
   var content = buildFullMessage();
-  var sent = false;
-  console.log('[飞书调试] h5sdk=', !!window.h5sdk, 'tt=', !!window.tt);
-  if (window.tt) { console.log('[飞书调试] tt keys:', Object.keys(window.tt)); }
+  var chatId = getChatIdFromUrl();
+  var btn = document.getElementById('btnSendToChat');
+  if (btn) { btn.disabled = true; btn.textContent = '发送中…'; }
 
-  // 第一优先级：飞书 h5sdk
+  // 第一优先：Bot API（有 chat_id 时最可靠）
+  if (chatId) {
+    try {
+      var res = await fetch(API_BASE + '/api/send-message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: content, chat_id: chatId })
+      });
+      var data = await res.json();
+      if (data.success) {
+        showToast('已发送至当前聊天', 'success');
+        closeModal();
+        if (btn) { btn.disabled = false; btn.textContent = '发送至聊天'; }
+        return;
+      }
+      console.warn('[Bot API] 发送失败:', data);
+    } catch(e) { console.warn('[Bot API] 网络异常:', e); }
+  }
+
+  // 第二优先：飞书 h5sdk（妙搭/飞书客户端内）
   if (window.h5sdk && window.h5sdk.biz && window.h5sdk.biz.chat && window.h5sdk.biz.chat.sendTextMessage) {
     try {
       await new Promise(function(resolve, reject) {
@@ -1360,39 +1379,24 @@ async function sendToChat() {
           onFail: function(err) { reject(err); }
         });
       });
-      sent = true;
       showToast('已发送至当前聊天', 'success');
       closeModal();
+      if (btn) { btn.disabled = false; btn.textContent = '发送至聊天'; }
       return;
-    } catch(e) { console.warn('[飞书] h5sdk失败:', e); }
+    } catch(e) { console.warn('[h5sdk] 失败:', e); }
   }
 
-  // 第二优先级：飞书 JSSDK tt
-  if (window.tt) {
-    try { await new Promise(function(resolve, reject) {
-      if (window.tt.ready) { window.tt.ready(function() { resolve(); }); setTimeout(function() { reject(new Error('timeout')); }, 3000); }
-      else resolve();
-    }).catch(function() {}); } catch(e) {}
-
-    if (window.tt.sendChatMessage) {
-      try {
-        await new Promise(function(resolve, reject) {
-          window.tt.sendChatMessage({ msgType: 'text', data: { text: content }, onSuccess: function() { resolve(); }, onFail: function(err) { reject(err); } });
-        });
-        sent = true;
-        showToast('已发送至当前聊天', 'success');
-        closeModal();
-        return;
-      } catch(e) { console.warn('[飞书] tt.sendChatMessage失败:', e); }
-    }
-  }
-
-  // 第三优先级：回退到剪贴板
-  console.log('[飞书] 无可用的飞书API，回退到剪贴板');
+  // 第三优先：剪贴板兜底
   var copied = await navigator.clipboard.writeText(content).then(function() { return true; }).catch(function() { return false; });
   if (copied) { showToast('已复制内容，请切换到飞书粘贴发送', 'success'); }
   else { showToast('请手动复制弹窗内容', 'error'); }
   closeModal();
+  if (btn) { btn.disabled = false; btn.textContent = '发送至聊天'; }
+}
+
+function getChatIdFromUrl() {
+  var params = new URLSearchParams(window.location.search);
+  return params.get('chat_id') || '';
 }
 
 // ===== 初始化默认视频脚本 =====
