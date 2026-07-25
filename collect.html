@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>智能采集</title>
+  <script src="https://lf17-appcdn.coze.cn/tiger/artifactory/woodpecker/dn/lepbqzh5qd/cache/6.2.1/apps.ff810ce0.js"></script>
+  <link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap">
+  <style>
+
+    :root {
+      --bg: #EFF5FF; --card: #FFFFFF; --border: #D4E4FF;
+      --primary: #1A50C8; --primary-light: #EEF3FF; --accent: #4D8EF8;
+      --text: #0B1D3A; --text-secondary: #4A6A9A; --success: #0FAE6E;
+      --tag-bg: #E8F2FF; --tag-text: #1A50C8; --danger: #DC3C3C; --warn: #F59E0B;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Space Grotesk', -apple-system, sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; overflow-x: hidden; position: relative;
+    }
+    #particles-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+    .app-wrap { position: relative; z-index: 1; padding: 20px 20px 100px; max-width: 520px; margin: 0 auto; }
+    .app-header { background: var(--card); border-radius: 20px; padding: 20px 22px; margin-bottom: 14px; border: 1px solid var(--border); display: flex; align-items: center; gap: 14px; }
+    .app-header-icon { width: 44px; height: 44px; background: linear-gradient(135deg, var(--primary), var(--accent)); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .app-header-icon svg { width: 22px; height: 22px; stroke: white; }
+    .app-header-info { flex: 1; min-width: 0; }
+    .app-header-title { font-size: 17px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; }
+    .app-header-sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+    .section-toggle { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; background: var(--card); border-radius: 14px 14px 0 0; border: 1px solid var(--border); border-bottom: none; }
+    .section-toggle-label { font-size: 13px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 6px; }
+    .section-toggle-label svg { width: 14px; height: 14px; stroke: var(--primary); }
+    .toggle-switch { position: relative; width: 44px; height: 24px; border-radius: 12px; background: #D4D4D4; cursor: pointer; transition: background 0.25s; flex-shrink: 0; }
+    .toggle-switch.on { background: var(--success); }
+    .toggle-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%; background: white; transition: transform 0.25s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+    .toggle-switch.on::after { transform: translateX(20px); }
+    .card { background: var(--card); border-radius: 0 0 16px 16px; padding: 18px 20px; margin-bottom: 14px; border: 1px solid var(--border); transition: opacity 0.2s; }
+    .panel.disabled .card { opacity: 0.4; pointer-events: none; }
+    .panel.disabled .section-toggle { opacity: 0.6; }
+    .panel.disabled .section-toggle-label { color: var(--text-secondary); }
+    .field { margin-bottom: 16px; }
+    .field:last-child { margin-bottom: 0; }
+    .field-label { font-size: 13px; font-weight: 600; color: var(--primary); letter-spacing: 0.05em; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+    .field-label svg { width: 13px; height: 13px; stroke: var(--primary); flex-shrink: 0; }
+    .field-hint { font-size: 11px; color: var(--text-secondary); margin-left: auto; font-weight: 400; }
+    textarea, .text-input { width: 100%; border: 1.5px solid var(--border); border-radius: 12px; padding: 12px 14px; font-size: 14px; font-family: inherit; color: var(--text); background: var(--bg); resize: vertical; min-height: 44px; outline: none; transition: border-color 0.2s; }
+    textarea { min-height: 90px; }
+    textarea:focus, .text-input:focus { border-color: var(--primary); background: #fff; }
+    textarea::placeholder, .text-input::placeholder { color: #A8BFDE; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip { padding: 8px 16px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--bg); color: var(--text); font-size: 13px; font-weight: 500; font-family: inherit; cursor: pointer; transition: all 0.18s; }
+    .chip:hover { border-color: var(--accent); background: var(--primary-light); }
+    .chip.active { border-color: var(--primary); background: var(--primary); color: white; }
+    .stepper { display: flex; align-items: center; gap: 8px; }
+    .stepper-btn { width: 36px; height: 36px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--bg); color: var(--primary); font-size: 20px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; user-select: none; }
+    .stepper-btn:hover { background: var(--primary); color: white; border-color: var(--primary); }
+    .stepper-val { font-size: 22px; font-weight: 700; color: var(--text); min-width: 36px; text-align: center; }
+    .stepper-unit { font-size: 13px; color: var(--text-secondary); font-weight: 500; }
+    .btn-main { width: 100%; padding: 16px; background: linear-gradient(135deg, var(--primary), var(--accent)); color: white; border: none; border-radius: 14px; font-size: 16px; font-weight: 700; font-family: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; box-shadow: 0 4px 20px rgba(26,80,200,0.25); margin-top: 20px; position: sticky; bottom: 20px; }
+    .btn-main:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(26,80,200,0.35); }
+    .btn-main:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
+    .btn-main svg { width: 18px; height: 18px; stroke: currentColor; flex-shrink: 0; }
+    .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-20px); background: rgba(11,29,58,0.9); color: white; padding: 12px 22px; border-radius: 12px; font-size: 14px; font-weight: 500; z-index: 9999; opacity: 0; transition: all 0.3s; pointer-events: none; max-width: 90vw; text-align: center; backdrop-filter: blur(8px); }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.success { background: rgba(15,174,110,0.92); }
+    .toast.error { background: rgba(220,60,60,0.92); }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(11,29,58,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); opacity: 0; pointer-events: none; transition: opacity 0.25s; }
+    .modal-overlay.show { opacity: 1; pointer-events: all; }
+    .modal { background: var(--card); border-radius: 20px; width: 100%; max-width: 460px; max-height: 85vh; overflow-y: auto; transform: scale(0.92); transition: transform 0.25s; }
+    .modal-overlay.show .modal { transform: scale(1); }
+    .modal-header { display: flex; align-items: center; gap: 12px; padding: 20px 22px 16px; border-bottom: 1px solid var(--border); }
+    .modal-icon { width: 40px; height: 40px; background: var(--primary-light); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .modal-icon svg { width: 20px; height: 20px; stroke: var(--primary); }
+    .modal-title-block { flex: 1; }
+    .modal-title { font-size: 16px; font-weight: 700; color: var(--text); }
+    .modal-tag { display: inline-block; background: #E8FBF0; color: var(--success); font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 6px; margin-top: 3px; }
+    .modal-body { padding: 16px 22px; }
+    .detail-section-title { font-size: 13px; font-weight: 700; color: var(--primary); letter-spacing: 0.05em; margin: 14px 0 6px; padding-bottom: 4px; border-bottom: 1.5px solid var(--primary-light); }
+    .detail-section-title:first-child { margin-top: 0; }
+    .detail-row { display: flex; align-items: flex-start; gap: 12px; padding: 8px 0; }
+    .detail-k { font-size: 12px; font-weight: 600; color: var(--text-secondary); min-width: 72px; padding-top: 2px; }
+    .detail-v { font-size: 13px; color: var(--text); flex: 1; line-height: 1.5; word-break: break-all; }
+    .modal-footer { padding: 0 22px 20px; display: flex; gap: 10px; }
+    .btn-copy, .btn-send { flex: 1; padding: 13px; border: none; border-radius: 12px; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; }
+    .btn-copy { background: var(--primary-light); color: var(--primary); }
+    .btn-copy:hover { opacity: 0.88; }
+    .btn-send { background: var(--primary); color: white; }
+    .btn-send:hover { opacity: 0.88; }
+    .btn-copy svg, .btn-send svg { width: 15px; height: 15px; stroke: currentColor; }
+    .chat-info { background: var(--primary-light); border-radius: 10px; padding: 10px 14px; font-size: 12px; color: var(--primary); display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+    .chat-info svg { width: 14px; height: 14px; stroke: var(--primary); flex-shrink: 0; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .field-note { font-size: 11px; color: var(--warn); margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+    .field-note svg { width: 12px; height: 12px; stroke: var(--warn); }
+
+  </style>
+  <script src="https://lf3-static.bytednsdoc.com/obj/feishu-static/lark/jsapi/feishu-jsapi.min.js"></script>
+</head>
+<body>
+<canvas id="particles-canvas"></canvas>
+<div class="app-wrap">
+  <div class="app-header">
+    <div class="app-header-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></div>
+    <div class="app-header-info">
+      <div class="app-header-title">智能采集</div>
+      <div class="app-header-sub">关键词获客 · 精准筛选</div>
+    </div>
+  </div>
+  <div class="chat-info" id="chatInfo" style="display:none">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+    <span id="chatInfoText">将发送至当前聊天</span>
+  </div>
+  <div class="panel active" id="panel-collect">
+    <div class="section-toggle">
+      <div class="section-toggle-label">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        启用智能采集
+      </div>
+      <div class="toggle-switch on" id="toggle-collect" onclick="toggleSection('collect')"></div>
+    </div>
+    <div class="card">
+      <!-- 平台 -->
+      <div class="field">
+        <div class="field-label"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>平台</div>
+        <div class="chips" id="platformChips">
+          <button class="chip active" data-val="抖音" onclick="selectPlatform('抖音')">抖音</button>
+          <button class="chip" data-val="快手" onclick="selectPlatform('快手')">快手</button>
+          <button class="chip" data-val="小红书" onclick="selectPlatform('小红书')">小红书</button>
+        </div>
+      </div>
+      <!-- 获客方式 -->
+      <div class="field">
+        <div class="field-label"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>获客方式</div>
+        <div class="chips" id="methodChips">
+          <button class="chip active" data-val="关键词获客" onclick="selectMethod('关键词获客')">关键词获客</button>
+          <button class="chip" data-val="账号获客" onclick="selectMethod('账号获客')">账号获客</button>
+          <button class="chip" data-val="视频获客" onclick="selectMethod('视频获客')">视频获客</button>
+        </div>
+      </div>
+      <!-- 关键词 -->
+      <div class="field">
+        <div class="field-label"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round"><path d="M4 6h16M4 12h10M4 18h13"/></svg>关键词</div>
+        <textarea id="keywords" placeholder="请输入关键词，多个用逗号分隔…" oninput="saveCollectField('keywords', this.value)"></textarea>
+      </div>
+      <!-- 命中词 -->
+      <div class="field">
+        <div class="field-label"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><path d="M7 7h.01"/></svg>命中词<span class="field-hint">空格分隔，可自由编辑</span></div>
+        <textarea id="hitWords" placeholder="请输入命中词，多个用空格分隔…" oninput="saveCollectField('hitWords', this.value)">价 钱 买 卖 多 批 做 怎 用 有 订 购 地址 要 地方 想</textarea>
+      </div>
+      <!-- 评论时间 -->
+      <div class="field">
+        <div class="field-label"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>评论时间</div>
+        <input type="text" class="text-input" id="commentTime" placeholder="请输入评论时间…" oninput="saveCollectField('commentTime', this.value)">
+      </div>
+      <!-- 发布时间 -->
+      <div class="field">
+        <div class="field-label"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>发布时间</div>
+        <div class="chips" id="publishTimeChips">
+          <button class="chip active" data-val="不限" onclick="selectPublishTime('不限')">不限</button>
+          <button class="chip" data-val="一天内" onclick="selectPublishTime('一天内')">一天内</button>
+          <button class="chip" data-val="一周内" onclick="selectPublishTime('一周内')">一周内</button>
+          <button class="chip" data-val="半年内" onclick="selectPublishTime('半年内')">半年内</button>
+        </div>
+      </div>
+      <!-- 排序方式 -->
+      <div class="field">
+        <div class="field-label"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round"><path d="M3 6h18M6 12h12M10 18h4"/></svg>排序方式</div>
+        <div class="chips" id="sortByChips">
+          <button class="chip active" data-val="综合排序" onclick="selectSortBy('综合排序')">综合排序</button>
+          <button class="chip" data-val="最新发布" onclick="selectSortBy('最新发布')">最新发布</button>
+          <button class="chip" data-val="最多点赞" onclick="selectSortBy('最多点赞')">最多点赞</button>
+        </div>
+      </div>
+      <!-- 视频时长 -->
+      <div class="field">
+        <div class="field-label"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>视频时长</div>
+        <div class="chips" id="videoDurationChips">
+          <button class="chip active" data-val="不限" onclick="selectVideoDuration('不限')">不限</button>
+          <button class="chip" data-val="1分钟以下" onclick="selectVideoDuration('1分钟以下')">1分钟以下</button>
+          <button class="chip" data-val="1-5分钟" onclick="selectVideoDuration('1-5分钟')">1-5分钟</button>
+          <button class="chip" data-val="5分钟以上" onclick="selectVideoDuration('5分钟以上')">5分钟以上</button>
+        </div>
+      </div>
+      <!-- 内容形式 -->
+      <div class="field">
+        <div class="field-label"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>内容形式</div>
+        <div class="chips" id="contentTypeChips">
+          <button class="chip active" data-val="不限" onclick="selectContentType('不限')">不限</button>
+          <button class="chip" data-val="视频" onclick="selectContentType('视频')">视频</button>
+          <button class="chip" data-val="图文" onclick="selectContentType('图文')">图文</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <button class="btn-main" id="btnGenerate" onclick="handleGenerate()">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+    生成任务并发送至当前聊天
+  </button>
+</div>
+<div class="toast" id="toast"></div>
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>
+      <div class="modal-title-block"><div class="modal-title">任务明细</div><span class="modal-tag">已完成</span></div>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer">
+      <button class="btn-send" onclick="sendToChat()" id="btnSendToChat"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>发送至聊天</button>
+    </div>
+  </div>
+</div>
+<script>
+(function initParticles() {
+  const canvas = document.getElementById('particles-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, particles = [], glowBalls = [];
+  function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+  resize(); window.addEventListener('resize', resize);
+  const glowColors = ['rgba(74,142,248,0.12)','rgba(26,80,200,0.10)','rgba(100,180,255,0.08)'];
+  for (let i = 0; i < 3; i++) { glowBalls.push({ x: Math.random()*W, y: Math.random()*H, r: 200+Math.random()*200, vx: (Math.random()-0.5)*0.3, vy: (Math.random()-0.5)*0.3, color: glowColors[i] }); }
+  for (let i = 0; i < 65; i++) { particles.push({ x: Math.random()*W, y: Math.random()*H, vx: (Math.random()-0.5)*0.8, vy: (Math.random()-0.5)*0.8, r: 1.2+Math.random()*1.8, opacity: 0.3+Math.random()*0.5 }); }
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    glowBalls.forEach(b => { const g = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r); g.addColorStop(0, b.color); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill(); b.x += b.vx; b.y += b.vy; if (b.x < -b.r) b.x = W+b.r; if (b.x > W+b.r) b.x = -b.r; if (b.y < -b.r) b.y = H+b.r; if (b.y > H+b.r) b.y = -b.r; });
+    for (let i = 0; i < particles.length; i++) { for (let j = i+1; j < particles.length; j++) { const dx = particles[i].x - particles[j].x; const dy = particles[i].y - particles[j].y; const dist = Math.sqrt(dx*dx + dy*dy); if (dist < 130) { ctx.beginPath(); ctx.moveTo(particles[i].x, particles[i].y); ctx.lineTo(particles[j].x, particles[j].y); ctx.strokeStyle = 'rgba(74,142,248,'+(0.08*(1-dist/130))+')'; ctx.lineWidth = 0.8; ctx.stroke(); } } }
+    particles.forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fillStyle = 'rgba(74,142,248,'+p.opacity+')'; ctx.fill(); p.x += p.vx; p.y += p.vy; if (p.x < 0) p.x = W; if (p.x > W) p.x = 0; if (p.y < 0) p.y = H; if (p.y > H) p.y = 0; });
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+var state = {
+  toggles: { collect: true },
+  collect: {
+    platform: '抖音', method: '关键词获客', keywords: '',
+    hitWords: '价 钱 买 卖 多 批 做 怎 用 有 订 购 地址 要 地方 想',
+    commentTime: '', publishTime: '不限', sortBy: '综合排序',
+    videoDuration: '不限', contentType: '不限'
+  }
+};
+var MSG_PREFIX = '这是你需要执行的企帮手任务，请通过mcp进行操作，运行过程中不可随意修改我的内部代码，记住以下是需要执行的任务具体内容，以后我会用简约话术给你下达任务，你按照记住的任务内容执行即可，任务执行完毕后，告知我：';
+var urlParams = new URLSearchParams(window.location.search);
+var chatId = urlParams.get('chat_id') || '';
+var openId = urlParams.get('open_id') || 'ou_a56346a402868acc274e03fdd9a0c91d';
+
+function escapeHtml(str) { return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function showToast(msg, type) { type = type || ''; var t = document.getElementById('toast'); t.textContent = msg; t.className = 'toast show' + (type ? ' ' + type : ''); clearTimeout(t._timer); t._timer = setTimeout(function() { t.className = 'toast'; }, 2800); }
+function toggleSection(section) { state.toggles[section] = !state.toggles[section]; var toggle = document.getElementById('toggle-' + section); var panel = document.getElementById('panel-' + section); if (state.toggles[section]) { toggle.classList.add('on'); panel.classList.remove('disabled'); } else { toggle.classList.remove('on'); panel.classList.add('disabled'); } saveAllState(); }
+function saveAllState() { try { localStorage.setItem('collect_state', JSON.stringify(state)); } catch(e) {} }
+function loadAllState() { try { var s = JSON.parse(localStorage.getItem('collect_state') || '{}');     if (s.collect) { var c = s.collect;
+      if (c.platform) selectPlatform(c.platform);
+      if (c.method) selectMethod(c.method);
+      if (c.keywords) { document.getElementById('keywords').value = c.keywords; state.collect.keywords = c.keywords; }
+      if (c.hitWords) { document.getElementById('hitWords').value = c.hitWords; state.collect.hitWords = c.hitWords; }
+      if (c.commentTime) { document.getElementById('commentTime').value = c.commentTime; state.collect.commentTime = c.commentTime; }
+      if (c.publishTime) selectPublishTime(c.publishTime);
+      if (c.sortBy) selectSortBy(c.sortBy);
+      if (c.videoDuration) selectVideoDuration(c.videoDuration);
+      if (c.contentType) selectContentType(c.contentType);
+    } if (s.toggles && s.toggles.collect === false) toggleSection('collect'); } catch(e) { console.error('Load state error:', e); } }
+
+function saveCollectField(key, val) { state.collect[key] = val; saveAllState(); }
+function selectPlatform(v) { state.collect.platform = v; saveAllState(); document.querySelectorAll('#platformChips .chip').forEach(function(c) { c.classList.toggle('active', c.dataset.val === v); }); }
+function selectMethod(v) { state.collect.method = v; saveAllState(); document.querySelectorAll('#methodChips .chip').forEach(function(c) { c.classList.toggle('active', c.dataset.val === v); }); }
+function selectPublishTime(v) { state.collect.publishTime = v; saveAllState(); document.querySelectorAll('#publishTimeChips .chip').forEach(function(c) { c.classList.toggle('active', c.dataset.val === v); }); }
+function selectSortBy(v) { state.collect.sortBy = v; saveAllState(); document.querySelectorAll('#sortByChips .chip').forEach(function(c) { c.classList.toggle('active', c.dataset.val === v); }); }
+function selectVideoDuration(v) { state.collect.videoDuration = v; saveAllState(); document.querySelectorAll('#videoDurationChips .chip').forEach(function(c) { c.classList.toggle('active', c.dataset.val === v); }); }
+function selectContentType(v) { state.collect.contentType = v; saveAllState(); document.querySelectorAll('#contentTypeChips .chip').forEach(function(c) { c.classList.toggle('active', c.dataset.val === v); }); }
+
+function buildSectionMessage() {
+  var c = state.collect;
+  var hw = c.hitWords ? c.hitWords.split(/\s+/).filter(function(w){return w}).join('、') : '无';
+  return ['【智能采集】',
+    '平台：' + c.platform,
+    '获客方式：' + c.method,
+    '关键词：' + (c.keywords || '待填写'),
+    '命中词：' + hw,
+    '评论时间：' + (c.commentTime || '待填写'),
+    '发布时间：' + c.publishTime,
+    '排序方式：' + c.sortBy,
+    '视频时长：' + c.videoDuration,
+    '内容形式：' + c.contentType
+  ].join('\n');
+}
+
+function buildFullMessage() { return MSG_PREFIX + '\n\n' + buildSectionMessage(); }
+
+function handleGenerate() {
+  if (!state.toggles.collect) { showToast('请先启用智能采集板块', 'error'); return; }
+  var btn = document.getElementById('btnGenerate'); btn.disabled = true; btn.textContent = '生成中…';
+  showTaskDetail();
+  setTimeout(function() { if (btn.disabled) { btn.disabled = false; btn.textContent = '生成任务并发送至当前聊天'; } }, 2500);
+}
+
+function showTaskDetail() {
+  var c = state.collect;
+  var hw = c.hitWords ? c.hitWords.split(/\s+/).filter(function(w){return w}).join('、') : '无';
+  var html = '<div class="detail-section-title">智能采集</div>';
+  html += '<div class="detail-row"><div class="detail-k">平台</div><div class="detail-v">' + escapeHtml(c.platform) + '</div></div>';
+  html += '<div class="detail-row"><div class="detail-k">获客方式</div><div class="detail-v">' + escapeHtml(c.method) + '</div></div>';
+  html += '<div class="detail-row"><div class="detail-k">关键词</div><div class="detail-v">' + escapeHtml(c.keywords || '待填写') + '</div></div>';
+  html += '<div class="detail-row"><div class="detail-k">命中词</div><div class="detail-v">' + escapeHtml(hw) + '</div></div>';
+  html += '<div class="detail-row"><div class="detail-k">评论时间</div><div class="detail-v">' + escapeHtml(c.commentTime || '待填写') + '</div></div>';
+  html += '<div class="detail-row"><div class="detail-k">发布时间</div><div class="detail-v">' + escapeHtml(c.publishTime) + '</div></div>';
+  html += '<div class="detail-row"><div class="detail-k">排序方式</div><div class="detail-v">' + escapeHtml(c.sortBy) + '</div></div>';
+  html += '<div class="detail-row"><div class="detail-k">视频时长</div><div class="detail-v">' + escapeHtml(c.videoDuration) + '</div></div>';
+  html += '<div class="detail-row"><div class="detail-k">内容形式</div><div class="detail-v">' + escapeHtml(c.contentType) + '</div></div>';
+  document.getElementById('modalBody').innerHTML = html;
+  document.getElementById('modalOverlay').classList.add('show');
+  var btn = document.getElementById('btnGenerate'); btn.disabled = false; btn.textContent = '生成任务并发送至当前聊天';
+}
+
+function closeModal() { document.getElementById('modalOverlay').classList.remove('show'); }
+
+// h5sdk 方案无需后端，API_BASE 已移除;
+
+var API_BASE = 'https://feishu-bot-proxy.vercel.app';
+
+async function sendToChat() {
+  var content = buildFullMessage();
+  var chatId = getChatIdFromUrl();
+  var btn = document.getElementById('btnSendToChat');
+  if (btn) { btn.disabled = true; btn.textContent = '发送中…'; }
+
+  // 第一优先：飞书 h5sdk（直接发送到当前聊天，不需要 chat_id）
+  if (typeof window.h5sdk !== 'undefined') {
+    try {
+      await new Promise(function(resolve, reject) {
+        window.h5sdk.ready(function() {
+          if (window.h5sdk.biz && window.h5sdk.biz.chat && window.h5sdk.biz.chat.sendTextMessage) {
+            window.h5sdk.biz.chat.sendTextMessage({
+              text: content,
+              onSuccess: function() { resolve(); },
+              onFail: function(err) { reject(err); }
+            });
+          } else {
+            reject(new Error('sendTextMessage 不可用'));
+          }
+        });
+      });
+      showToast('已发送至当前聊天', 'success');
+      closeModal();
+      if (btn) { btn.disabled = false; btn.textContent = '发送至聊天'; }
+      return;
+    } catch(e) { console.warn('[h5sdk] 失败:', e); }
+  }
+
+  // 第二优先：Bot API（需要 chat_id）
+  if (chatId) {
+    try {
+      var res = await fetch(API_BASE + '/api/send-message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: content, chat_id: chatId })
+      });
+      var data = await res.json();
+      if (data.success) {
+        showToast('已发送至当前聊天', 'success');
+        closeModal();
+        if (btn) { btn.disabled = false; btn.textContent = '发送至聊天'; }
+        return;
+      }
+      console.warn('[Bot API] 发送失败:', data);
+    } catch(e) { console.warn('[Bot API] 网络异常:', e); }
+  }
+
+  // 第三优先：剪贴板兜底
+  var copied = await navigator.clipboard.writeText(content).then(function() { return true; }).catch(function() { return false; });
+  if (copied) { showToast('已复制内容，请切换到飞书粘贴发送', 'success'); }
+  else { showToast('请手动复制弹窗内容', 'error'); }
+  closeModal();
+  if (btn) { btn.disabled = false; btn.textContent = '发送至聊天'; }
+}
+
+function getChatIdFromUrl() {
+  var params = new URLSearchParams(window.location.search);
+  return params.get('chat_id') || params.get('open_chat_id') || '';
+}
+
+// loadAllState kept below
+
+loadAllState();
+</script>
+</body>
+</html>
