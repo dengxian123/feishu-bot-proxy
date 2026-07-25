@@ -1,7 +1,11 @@
 {
   "functions": {
     "api/send-message.js": {
+      "memory": 256,
       "maxDuration": 10
     }
-  }
+  },
+  "rewrites": [
+    { "source": "/api/send-message", "destination": "/api/send-message" }
+  ]
 }
