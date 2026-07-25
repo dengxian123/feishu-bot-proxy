@@ -1,7 +1,7 @@
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   // CORS 允许飞书妙搭域名和本地开发
   const origin = req.headers.origin || '';
-  const allowed = ['https://fcnv9xqdh3po.feishu.cn', 'https://pcnk60y0rleu.feishu.cn', 'http://localhost'];
+  const allowed = ['https://fcnv9xqdh3po.feishu.cn', 'http://localhost'];
   const isAllowed = allowed.some(function(d) { return origin.startsWith(d); });
   if (isAllowed) {
     res.setHeader('Access-Control-Allow-Origin', origin);
