@@ -1,0 +1,14 @@
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+# 将 /api/ 路径映射到 Netlify Functions
+[[redirects]]
+  from = "/api/get-openid"
+  to = "/.netlify/functions/get-openid"
+  status = 200
+
+[[redirects]]
+  from = "/api/send-message"
+  to = "/.netlify/functions/send-message"
+  status = 200
