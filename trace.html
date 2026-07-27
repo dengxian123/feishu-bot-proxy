@@ -217,8 +217,18 @@ var openId = urlParams.get('open_id') || 'ou_a56346a402868acc274e03fdd9a0c91d';
 function escapeHtml(str) { return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function showToast(msg, type) { type = type || ''; var t = document.getElementById('toast'); t.textContent = msg; t.className = 'toast show' + (type ? ' ' + type : ''); clearTimeout(t._timer); t._timer = setTimeout(function() { t.className = 'toast'; }, 2800); }
 function toggleSection(section) { state.toggles[section] = !state.toggles[section]; var toggle = document.getElementById('toggle-' + section); var panel = document.getElementById('panel-' + section); if (state.toggles[section]) { toggle.classList.add('on'); panel.classList.remove('disabled'); } else { toggle.classList.remove('on'); panel.classList.add('disabled'); } saveAllState(); }
-function saveAllState() { try { localStorage.setItem('trace_state', JSON.stringify(state)); } catch(e) {} }
-function loadAllState() { try { var s = JSON.parse(localStorage.getItem('trace_state') || '{}');     if (s.trace) { var t = s.trace;
+// ===== 按 ?app= 参数隔离各机器人数据 =====
+function getAppPrefix() {
+  try {
+    var p = new URLSearchParams(window.location.search);
+    var app = p.get('app');
+    if (app) return 'app_' + app + '_';
+  } catch (e) {}
+  return 'app_default_';
+}
+
+function saveAllState() { try { localStorage.setItem(getAppPrefix() + 'trace_state', JSON.stringify(state)); } catch(e) {} }
+function loadAllState() { try { var s = JSON.parse(localStorage.getItem(getAppPrefix() + 'trace_state') || '{}');     if (s.trace) { var t = s.trace;
       if (t.account !== undefined) { document.getElementById('traceAccount').value = t.account; state.trace.account = t.account; }
       if (t.searchWord) { document.getElementById('traceSearchWord').value = t.searchWord; state.trace.searchWord = t.searchWord; }
       if (t.sortBy) selectTraceSortBy(t.sortBy);
@@ -270,33 +280,81 @@ function showTaskDetail() {
 
 function closeModal() { document.getElementById('modalOverlay').classList.remove('show'); }
 
-// ===== 发送至聊天（复制 + 自动返回聊天）=====
+// ===== 发送至聊天（飞书鲁棒版）=====
+function copyText(text) {
+  return new Promise(function (resolve) {
+    try {
+      if (window.h5sdk && window.h5sdk.util && window.h5sdk.util.setClipboardData) {
+        window.h5sdk.util.setClipboardData({
+          text: text,
+          onSuccess: function () { resolve(true); },
+          onFail: function () { tryNext(); }
+        });
+        return;
+      }
+    } catch (e) {}
+    tryNext();
+
+    function tryNext() {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        var done = false;
+        var p = navigator.clipboard.writeText(text);
+        var to = setTimeout(function () { if (!done) { done = true; tryExec(); } }, 800);
+        if (p && typeof p.then === 'function') {
+          p.then(function () { if (!done) { done = true; clearTimeout(to); resolve(true); } })
+           .catch(function () { if (!done) { done = true; clearTimeout(to); tryExec(); } });
+        } else {
+          clearTimeout(to); resolve(true);
+        }
+        return;
+      }
+      tryExec();
+    }
+
+    function tryExec() {
+      try {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.top = '0';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        ta.setSelectionRange(0, ta.value.length);
+        var okk = document.execCommand('copy');
+        document.body.removeChild(ta);
+        resolve(!!okk);
+      } catch (e2) {
+        resolve(false);
+      }
+    }
+  });
+}
+
+function showManualCopy(text) {
+  var overlay = document.getElementById('modalOverlay');
+  var body = document.getElementById('modalBody');
+  body.innerHTML = '<div class="detail-section-title">自动复制失败，请手动长按下方文字全选并复制</div>'
+    + '<textarea readonly style="width:100%;height:220px;font-size:13px;line-height:1.5;padding:8px;box-sizing:border-box;">' + escapeHtml(text) + '</textarea>';
+  overlay.classList.add('show');
+}
+
 async function sendToChat() {
   var content = buildFullMessage();
   var btn = document.getElementById('btnSendToChat');
   if (btn) { btn.disabled = true; btn.textContent = '复制中…'; }
 
-  var copied = false;
-  try {
-    await navigator.clipboard.writeText(content);
-    copied = true;
-  } catch (e) {
-    var ta = document.createElement('textarea');
-    ta.value = content;
-    ta.style.position = 'fixed';
-    ta.style.left = '-9999px';
-    document.body.appendChild(ta);
-    ta.select();
-    try { copied = document.execCommand('copy'); } catch (e2) {}
-    document.body.removeChild(ta);
+  var ok = await copyText(content);
+
+  if (!ok) {
+    showToast('复制失败，已为你打开手动复制', 'error');
+    showManualCopy(content);
+    if (btn) { btn.disabled = false; btn.textContent = '复制'; }
+    return;
   }
 
-  if (copied) {
-    showToast('已复制，返回聊天后粘贴发送', 'success');
-  } else {
-    showToast('复制失败，请手动复制内容', 'error');
-  }
-
+  showToast('已复制，回到聊天长按输入框粘贴即可', 'success');
   closeModal();
   if (btn) { btn.disabled = false; btn.textContent = '发送至聊天'; }
 
@@ -307,14 +365,9 @@ async function sendToChat() {
         return;
       }
     } catch (e) {}
-    history.back();
-  }, 600);
+    try { history.back(); } catch (e2) {}
+  }, 1200);
 }
-
-    }, 500);
-  }
-})();
-
 loadAllState();
 </script>
 </body>
