@@ -318,15 +318,34 @@ function closeModal() { document.getElementById('modalOverlay').classList.remove
 
 // ===== 发送至聊天（h5sdk 方案，无需后端）=====
 var APP_ID = 'cli_aaeee4b765b81d22';
-var h5sdkReady = false;
 
-// 页面加载时初始化 h5sdk
-if (window.h5sdk) {
-  window.h5sdk.ready(function() {
-    h5sdkReady = true;
-    console.log('[h5sdk] SDK 已就绪');
-  });
-}
+// 页面加载时初始化 h5sdk（轮询等待脚本加载）
+(function initH5sdk() {
+  if (window.h5sdk) {
+    console.log('[h5sdk] SDK 已检测到，调用 ready()...');
+    window.h5sdk.ready(function() {
+      console.log('[h5sdk] SDK 已就绪');
+    });
+    window.h5sdkReady = true;
+  } else {
+    console.log('[h5sdk] SDK 尚未加载，等待中...');
+    var attempts = 0;
+    var timer = setInterval(function() {
+      if (window.h5sdk) {
+        clearInterval(timer);
+        console.log('[h5sdk] SDK 在第 ' + (attempts+1) + ' 次轮询时检测到，调用 ready()...');
+        window.h5sdk.ready(function() {
+          console.log('[h5sdk] SDK 已就绪');
+        });
+        window.h5sdkReady = true;
+      } else if (++attempts > 30) {
+        clearInterval(timer);
+        console.log('[h5sdk] 超时（15秒），SDK 未加载');
+        window.h5sdkReady = false;
+      }
+    }, 500);
+  }
+})();
 
 async function sendToChat() {
   var content = buildFullMessage();
@@ -334,7 +353,7 @@ async function sendToChat() {
   if (btn) { btn.disabled = true; btn.textContent = '发送中…'; }
 
   // 方案1：h5sdk requestAuthCode（免鉴权 API）→ 后端发消息（真正一键发送）
-  if (window.h5sdk && h5sdkReady) {
+  if (window.h5sdk) {
     console.log('[发送] 尝试 h5sdk.requestAuthCode + 后端');
     try {
       // 第1步：获取 auth_code（免鉴权，飞书自动弹授权确认）
