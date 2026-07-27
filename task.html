@@ -1449,8 +1449,23 @@ async function sendToChat() {
     } catch(e) { console.log('[tt.shareText] 异常:', e.message); }
   }
 
-  // 方案4：剪贴板兜底
-  console.log('[发送] 所有自动发送方案均失败，使用剪贴板兜底');
+  // 方案4：navigator.share（标准 Web Share API，调用系统分享面板，无需后端）
+  if (navigator.share) {
+    console.log('[发送] 尝试 navigator.share');
+    try {
+      await navigator.share({ title: '企帮手消息', text: content });
+      console.log('[navigator.share] 分享成功');
+      showToast('已发送至聊天', 'success');
+      closeModal();
+      if (btn) { btn.disabled = false; btn.textContent = '发送至聊天'; }
+      return;
+    } catch(e) {
+      console.log('[navigator.share] 用户取消或失败:', e.message);
+    }
+  }
+
+  // 方案5：剪贴板兜底
+  console.log('[发送] 所有自动方案均失败，使用剪贴板兜底');
   var copied = await navigator.clipboard.writeText(content).then(function() { return true; }).catch(function() { return false; });
   if (copied) {
     showToast('已复制内容，请切换到飞书粘贴发送', 'success');
